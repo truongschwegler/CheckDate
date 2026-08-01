@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Tô màu điều kiện Excel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#0f1720;
+    --paper:#f4f6f9;
+    --panel:#ffffff;
+    --line:#e1e6ec;
+    --muted:#6b7686;
+    --accent:#2952e3;
+    --accent-ink:#ffffff;
+    --good:#16875a;
+    --step-off:#c7cedb;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Manrope',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header.top{
+    background:var(--ink);
+    color:#fff;
+    padding:22px 28px;
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+  }
+  header.top h1{
+    font-size:18px;
+    margin:0;
+    font-weight:800;
+    letter-spacing:-0.01em;
+  }
+  header.top span{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#98a2b3;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 80px;}
+
+  .steps{display:flex;gap:8px;margin-bottom:22px;}
+  .steps div{
+    flex:1;
+    height:4px;
+    background:var(--step-off);
+    border-radius:3px;
+    transition:background .25s;
+  }
+  .steps div.on{background:var(--accent);}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 24px;
+    margin-bottom:18px;
+  }
+  .card.disabled{opacity:.45;pointer-events:none;}
+
+  .card h2{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    margin:0 0 16px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--muted);
+  }
+  .card h2 b{
+    font-family:'IBM Plex Mono',monospace;
+    background:var(--ink);
+    color:#fff;
+    width:22px;height:22px;
+    display:inline-flex;align-items:center;justify-content:center;
+    border-radius:6px;
+    font-size:11px;
+  }
+
+  .drop{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:28px;
+    text-align:center;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .drop:hover{border-color:var(--accent);background:#f7f9ff;}
+  .drop p{margin:4px 0;color:var(--muted);font-size:13px;}
+  .drop strong{color:var(--ink);font-size:14px;}
+  input[type=file]{display:none;}
+
+  .filepill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:#eef2ff;color:var(--accent);
+    padding:6px 12px;border-radius:20px;
+    font-size:12.5px;font-weight:600;
+    font-family:'IBM Plex Mono',monospace;
+  }
+
+  .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .field{flex:1;min-width:180px;}
+  .field label{
+    display:block;font-size:12px;color:var(--muted);
+    margin-bottom:6px;font-weight:600;
+  }
+  select, input[type=number], input[type=text]{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:'Manrope',sans-serif;
+    background:#fff;
+    color:var(--ink);
+  }
+  select:focus, input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .colorrow{display:flex;align-items:center;gap:12px;}
+  input[type=color]{
+    width:46px;height:38px;border:1px solid var(--line);border-radius:8px;
+    padding:2px;background:#fff;cursor:pointer;
+  }
+  .swatchname{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);}
+
+  .sentence{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13.5px;
+    line-height:1.6;
+    margin-top:4px;
+  }
+  .sentence b{color:var(--accent);}
+
+  table.preview{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.5px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  table.preview thead th{
+    text-align:left;
+    padding:8px 10px;
+    background:var(--ink);
+    color:#fff;
+    position:sticky;top:0;
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:11.5px;
+  }
+  table.preview td{
+    padding:7px 10px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  .tblscroll{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:10px;}
+
+  .diffpill{
+    display:inline-block;padding:2px 8px;border-radius:20px;
+    font-size:11px;font-weight:600;
+  }
+  .diffpill.match{background:#fde2e2;color:#b3261e;}
+  .diffpill.nomatch{background:#eef1f5;color:var(--muted);}
+
+  .rowmatch td{background:var(--hlcolor,#fde2e2);}
+
+  button.primary{
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:none;
+    border-radius:9px;
+    padding:12px 22px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:'Manrope',sans-serif;
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button.primary:disabled{background:#c7cedb;cursor:not-allowed;}
+
+  .exportbar{display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap;}
+  .count{font-size:13px;color:var(--muted);}
+  .count b{color:var(--ink);font-family:'IBM Plex Mono',monospace;}
+
+  .empty{color:var(--muted);font-size:13px;padding:20px;text-align:center;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Tô màu điều kiện — Excel</h1>
+  <span>ngày đến · quá hạn · xuất file</span>
+</header>
+
+<div class="wrap">
+
+  <div class="steps">
+    <div id="s1" class="on"></div>
+    <div id="s2"></div>
+    <div id="s3"></div>
+    <div id="s4"></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <h2><b>1</b> Tải file Excel</h2>
+    <div id="dropzone" class="drop">
+      <p><strong>Bấm để chọn file</strong> hoặc kéo thả vào đây</p>
+      <p>Hỗ trợ .xlsx — sheet đầu tiên sẽ được sử dụng</p>
+      <input type="file" id="fileInput" accept=".xlsx">
+    </div>
+    <div id="fileInfo" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card disabled" id="card2">
+    <h2><b>2</b> Thiết lập điều kiện tô màu</h2>
+
+    <div class="row">
+      <div class="field">
+        <label>Hàng tiêu đề (số thứ tự)</label>
+        <input type="number" id="headerRow" value="1" min="1">
+      </div>
+      <div class="field">
+        <label>Cột ngày (ví dụ: Đến ngày)</label>
+        <select id="colSelect"></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>So sánh</label>
+        <select id="direction">
+          <option value="overdue">Hôm nay − Ngày trong cột</option>
+          <option value="upcoming">Ngày trong cột − Hôm nay</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Toán tử</label>
+        <select id="operator">
+          <option value=">">&gt; lớn hơn</option>
+          <option value=">=">&ge; lớn hơn hoặc bằng</option>
+          <option value="<">&lt; nhỏ hơn</option>
+          <option value="<=">&le; nhỏ hơn hoặc bằng</option>
+          <option value="=">= bằng</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Số ngày</label>
+        <input type="number" id="threshold" value="7" min="0">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Màu tô</label>
+        <div class="colorrow">
+          <input type="color" id="colorPick" value="#e53935">
+          <span class="swatchname mono" id="colorHex">#E53935</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sentence" id="sentence"></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card disabled" id="card3">
+    <h2><b>3</b> Xem trước</h2>
+    <div class="tblscroll">
+      <table class="preview" id="previewTable">
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="card disabled" id="card4">
+    <h2><b>4</b> Xuất file</h2>
+    <div class="exportbar">
+      <div class="count">Số dòng khớp điều kiện: <b id="matchCount">0</b> / <span id="totalCount">0</span></div>
+      <button class="primary" id="exportBtn">Xuất file Excel</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let workbook = null;
+let worksheet = null;
+let headers = [];
+let headerRowIdx = 1;
+let dataRows = []; // {rowNumber, cells:[], dateValue, diffDays, match}
+let originalFileName = 'file';
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const fileInfo = document.getElementById('fileInfo');
+const card2 = document.getElementById('card2');
+const card3 = document.getElementById('card3');
+const card4 = document.getElementById('card4');
+const colSelect = document.getElementById('colSelect');
+const headerRowInput = document.getElementById('headerRow');
+const direction = document.getElementById('direction');
+const operator = document.getElementById('operator');
+const threshold = document.getElementById('threshold');
+const colorPick = document.getElementById('colorPick');
+const colorHex = document.getElementById('colorHex');
+const sentence = document.getElementById('sentence');
+const previewTable = document.getElementById('previewTable');
+const matchCountEl = document.getElementById('matchCount');
+const totalCountEl = document.getElementById('totalCount');
+const exportBtn = document.getElementById('exportBtn');
+const steps = [document.getElementById('s1'),document.getElementById('s2'),document.getElementById('s3'),document.getElementById('s4')];
+
+dropzone.addEventListener('click', ()=> fileInput.click());
+dropzone.addEventListener('dragover', e=>{e.preventDefault(); dropzone.style.borderColor='var(--accent)';});
+dropzone.addEventListener('dragleave', ()=> dropzone.style.borderColor='var(--line)');
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault();
+  dropzone.style.borderColor='var(--line)';
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+function setStep(n){
+  steps.forEach((s,i)=> s.classList.toggle('on', i < n));
+}
+
+async function handleFile(file){
+  originalFileName = file.name.replace(/\.xlsx$/i,'');
+  const buf = await file.arrayBuffer();
+  workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buf);
+  worksheet = workbook.worksheets[0];
+
+  fileInfo.innerHTML = `<span class="filepill">📄 ${file.name} · sheet "${worksheet.name}" · ${worksheet.actualRowCount} dòng</span>`;
+
+  card2.classList.remove('disabled');
+  setStep(2);
+  loadHeaders();
+}
+
+function loadHeaders(){
+  headerRowIdx = parseInt(headerRowInput.value) || 1;
+  const row = worksheet.getRow(headerRowIdx);
+  headers = [];
+  const colCount = Math.max(worksheet.actualColumnCount, row.actualCellCount);
+  for(let c=1;c<=colCount;c++){
+    const v = row.getCell(c).value;
+    headers.push(v === null || v === undefined ? `Cột ${c}` : String(v));
+  }
+  colSelect.innerHTML = headers.map((h,i)=> `<option value="${i+1}">${h}</option>`).join('');
+  // try to auto-select a column containing "ngày"
+  const guess = headers.findIndex(h => /ng[aà]y/i.test(h) && /đến|den|end/i.test(h));
+  if(guess >= 0) colSelect.value = guess+1;
+  recompute();
+}
+
+headerRowInput.addEventListener('change', loadHeaders);
+colSelect.addEventListener('change', recompute);
+direction.addEventListener('change', recompute);
+operator.addEventListener('change', recompute);
+threshold.addEventListener('input', recompute);
+colorPick.addEventListener('input', ()=>{
+  colorHex.textContent = colorPick.value.toUpperCase();
+  applyMatchStyles();
+});
+
+function excelDateToJs(v){
+  if(v instanceof Date) return v;
+  if(typeof v === 'number'){
+    // excel serial date
+    const epoch = new Date(Date.UTC(1899,11,30));
+    return new Date(epoch.getTime() + v*86400000);
+  }
+  if(typeof v === 'string'){
+    const s = v.trim();
+    let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if(m) return new Date(parseInt(m[3]), parseInt(m[2])-1, parseInt(m[1]));
+    m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if(m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+    const d = new Date(s);
+    if(!isNaN(d)) return d;
+  }
+  if(v && typeof v === 'object' && v.result !== undefined) return excelDateToJs(v.result);
+  return null;
+}
+
+function dayFloor(d){
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function recompute(){
+  const dateCol = parseInt(colSelect.value);
+  const today = dayFloor(new Date());
+  dataRows = [];
+
+  const lastRow = worksheet.actualRowCount;
+  for(let r = headerRowIdx+1; r <= lastRow; r++){
+    const row = worksheet.getRow(r);
+    if(row.actualCellCount === 0) continue;
+    const raw = row.getCell(dateCol).value;
+    const jsDate = excelDateToJs(raw);
+    let diffDays = null;
+    if(jsDate){
+      const dd = dayFloor(jsDate);
+      diffDays = Math.round((today - dd)/86400000);
+    }
+    const cells = [];
+    for(let c=1;c<=headers.length;c++){
+      const cv = row.getCell(c).value;
+      cells.push(cv === null || cv === undefined ? '' : (cv.text !== undefined ? cv.text : cv));
+    }
+    dataRows.push({rowNumber:r, cells, jsDate, diffDays});
+  }
+
+  buildPreviewTable();
+  applyMatchStyles();
+  card3.classList.remove('disabled');
+  card4.classList.remove('disabled');
+  setStep(3);
+}
+
+function conditionMatch(diffDays){
+  if(diffDays === null) return false;
+  const dir = direction.value;
+  const val = dir === 'overdue' ? diffDays : -diffDays;
+  const t = parseFloat(threshold.value);
+  switch(operator.value){
+    case '>': return val > t;
+    case '>=': return val >= t;
+    case '<': return val < t;
+    case '<=': return val <= t;
+    case '=': return val === t;
+  }
+  return false;
+}
+
+function buildPreviewTable(){
+  const thead = previewTable.querySelector('thead tr');
+  thead.innerHTML = headers.map(h=>`<th>${h}</th>`).join('') + '<th>Chênh lệch (ngày)</th>';
+  const tbody = previewTable.querySelector('tbody');
+  if(dataRows.length === 0){
+    tbody.innerHTML = `<tr><td colspan="${headers.length+1}"><div class="empty">Không có dữ liệu</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = dataRows.map(r=>{
+    const cellsHtml = r.cells.map(c=>`<td>${c===''?'':c}</td>`).join('');
+    return `<tr data-row="${r.rowNumber}">${cellsHtml}<td class="diffcell"></td></tr>`;
+  }).join('');
+}
+
+function applyMatchStyles(){
+  const color = colorPick.value;
+  let matchCount = 0;
+  const tbody = previewTable.querySelector('tbody');
+  dataRows.forEach(r=>{
+    const match = conditionMatch(r.diffDays);
+    r.match = match;
+    if(match) matchCount++;
+    const tr = tbody.querySelector(`tr[data-row="${r.rowNumber}"]`);
+    if(!tr) return;
+    tr.style.background = match ? color+'33' : '';
+    const diffCell = tr.querySelector('.diffcell');
+    if(diffCell){
+      diffCell.innerHTML = r.diffDays === null
+        ? '<span class="diffpill nomatch">—</span>'
+        : `<span class="diffpill ${match?'match':'nomatch'}">${r.diffDays}</span>`;
+    }
+  });
+  matchCountEl.textContent = matchCount;
+  totalCountEl.textContent = dataRows.length;
+  updateSentence();
+}
+
+function updateSentence(){
+  const colName = headers[parseInt(colSelect.value)-1] || '';
+  const dirTxt = direction.value === 'overdue' ? 'Hôm nay − ' + colName : colName + ' − Hôm nay';
+  const opTxt = {'>':'lớn hơn','>=':'lớn hơn hoặc bằng','<':'nhỏ hơn','<=':'nhỏ hơn hoặc bằng','=':'bằng'}[operator.value];
+  sentence.innerHTML = `Nếu <b>(${dirTxt})</b> ${opTxt} <b>${threshold.value} ngày</b>, dòng đó sẽ được tô màu <b>${colorHex.textContent}</b>.`;
+}
+
+exportBtn.addEventListener('click', async ()=>{
+  exportBtn.disabled = true;
+  exportBtn.textContent = 'Đang xuất...';
+  const argb = 'FF' + colorPick.value.replace('#','').toUpperCase();
+  const colCount = headers.length;
+
+  dataRows.forEach(r=>{
+    if(!r.match) return;
+    const row = worksheet.getRow(r.rowNumber);
+    for(let c=1;c<=colCount;c++){
+      row.getCell(c).fill = {
+        type:'pattern',
+        pattern:'solid',
+        fgColor:{argb}
+      };
+    }
+    row.commit();
+  });
+
+  const buf = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = originalFileName + '_da_to_mau.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  exportBtn.disabled = false;
+  exportBtn.textContent = 'Xuất file Excel';
+  setStep(4);
+});
+</script>
+
+</body>
+</html>
